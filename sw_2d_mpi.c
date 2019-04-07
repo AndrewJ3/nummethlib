@@ -27,7 +27,7 @@
  
  Modified:
  26 March 2019 by Michal A. Kopera - complete overhaul of the code
- 07 April 2019 by Andrew Jones -parallelized
+ 07 April 2019 by Andrew Jones -parallelization
  
  Author:
  John Burkardt
