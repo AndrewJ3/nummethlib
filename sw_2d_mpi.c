@@ -27,12 +27,10 @@
  
  Modified:
  26 March 2019 by Michal A. Kopera - complete overhaul of the code
- 07 April 2019 by Andrew Jones -parallelization
- 
- Author:
- John Burkardt
+ 07 April 2019 by Andrew M. Jones -parallelization
  
  Reference:
+ John Burkardt,
  Cleve Moler,
  "The Shallow Water Equations",
  Experiments with MATLAB.
@@ -77,26 +75,10 @@ int main ( int argc, char *argv[] )
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&irank);
     MPI_Comm_size(MPI_COMM_WORLD,&nproc);
-    
-//     if(irank==0) {
-//         printf ( "\n" );
-//         printf ( "SHALLOW_WATER_2D\n" );
-//         printf ( "\n" );
-//     }
-//     printf("nproc= %d \n",nproc);
-//     printf("irank= %d \n",irank);
-    //get command line arguments
+
+	//get command line arguments
     getArgs_mpi(&nx, &dt, &x_length, &t_final, argc, argv, irank, MPI_COMM_WORLD);
-//     if(irank==0){
-//         printf ( "\n" );
-//         printf ( "SHALLOW_WATER_2D\n" );
-//         printf ( "\n" );
-//         printf ( "  NX = %d\n", nx );
-//         printf ( "  DT = %g\n", dt );
-//         printf ( "  X_LENGTH = %g\n", x_length );
-//         printf ( "  T_FINAL = %g\n", t_final );
-//     }
-//     printf("nrpoc= %d",nproc);
+
     //divide data among processors
     int q = (int) sqrt((double) nproc);
     ny=nx;
@@ -146,8 +128,6 @@ int main ( int argc, char *argv[] )
     
     double lambda_x = 0.5*dt/dx;
     double lambda_y = 0.5*dt/dy;
-//     printf("%d",irank);
-//     printf("%d",irank);
     
 // --------------------------------------------------------------------------------------
     /* REQUESTING & INITIALIZATION OF BUF_FIELDS (TOP/BOTTOM & LEFT/RIGHT) */
@@ -165,8 +145,6 @@ int main ( int argc, char *argv[] )
     MPI_Status status;
     
     /*SET-UP CARTESIAN COMMUNICATOR*/
-//     printf("'CARTCOMM'");
-//     printf("%d \n",irank);
     MPI_Comm Comm_cart;
     int ndims=2;
     int rank_left, rank_right,rank_up,rank_down;
@@ -176,21 +154,13 @@ int main ( int argc, char *argv[] )
     //no periodicity
     wrap_around[0] = 0;
     wrap_around[1] = 0;
-//     printf("q %d \n",q);
+
     dims[0] = q;
     dims[1] = q;
-    //DEBUG--------
-//     printf("'CARTCOMM'");
-//     printf("%d \n",irank);
     MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, wrap_around, 0, &Comm_cart);
-//     printf('Debug cart',irank);
-    //DEBUG--------
-    //RECHECK-------------
-//     printf("CARTERROR");
-//     printf("nloc %d \n",ny_loc);
     MPI_Cart_shift(Comm_cart, 1 ,1, &rank_left, &rank_right);
     MPI_Cart_shift(Comm_cart, 0 ,1, &rank_down, &rank_up);
-    //RECHECK-------------
+
 //-------------------------------------------------------------------------------------
 
     time=0.0;
@@ -208,64 +178,39 @@ int main ( int argc, char *argv[] )
         /***********LEFT/RIGHT************/
         if(rank_left>=0){
             //set up receiving from the left
-//             printf("error0 ranklft =%d \n",rank_left);
             MPI_Irecv(buf_left_recv, n_buf, MPI_DOUBLE,rank_left,
             101, MPI_COMM_WORLD, &request_h_recv_left);
 
             j=1;
             for ( i = 0; i < ny_loc; i++ ){
-                id=ID_2D(i+1,j,ny_loc);
-				
+                id=ID_2D(i+1,j,ny_loc);		
 				//set up sending to the left
 				buf_left_send[i] = h[id]; 
 				buf_left_send[i+ny_loc] = uh[id];
 				buf_left_send[i+2*ny_loc] = vh[id];
-// 				printf("bufleft[%d] %f, hlft[%d] %f \n",i,buf_left_send[i],id,h[id]);
-
             }
-//             for(i =0; i<n_buf;i++){
-// 				printf("bufleft[%d] %f \n",i,buf_left_send[i]);
-// 				}
             MPI_Isend(buf_left_send,n_buf,MPI_DOUBLE,rank_left,
             101,MPI_COMM_WORLD,&request_h_send_left); 
         
         }
 
         if(rank_right>=0){
-// 			printf("error1 rankrgt =%d \n",rank_right);
-			//set up receiving from the right
             MPI_Irecv(buf_right_recv, n_buf, MPI_DOUBLE,rank_right,
             101, MPI_COMM_WORLD, &request_h_recv_right);
-
             j=nx_loc;
-// 			printf("j=%d \n",j);
             for ( i = 0; i < ny_loc; i++ ){
-// 				 j=nx_loc+4;
-// 				printf("i%d \n",i);
                 id=ID_2D(i+1,j,ny_loc);
-
-				//set up sending to the right
 				buf_right_send[i] = h[id]; 
 				buf_right_send[i+ny_loc] = uh[id];
 				buf_right_send[i+2*ny_loc] = vh[id];
-// 				printf("bufright[%d] %f, hrgt[%d] %f \n",i,buf_right_send[i],id,h[id]);
-
 			}
             MPI_Isend(buf_right_send,n_buf,MPI_DOUBLE,rank_right,
-            101,MPI_COMM_WORLD,&request_h_send_right); 
-// 			for(i =0; i<n_buf;i++){
-// 				printf("bufright[%d] %f \n",i,buf_right_send[i]);
-// 			}
-			
+            101,MPI_COMM_WORLD,&request_h_send_right); 		
         }
 
 		/**********TOP/BOTTOM**********/
 
         if(rank_up>=0){           
-
-// 			printf("error2 rankup =%d \n",rank_up);
-             //set up receiving from the bottom
-// 			           printf("nbuf %d \n",n_buf);
             MPI_Irecv(buf_up_recv, n_buf, MPI_DOUBLE,rank_up,
             101, MPI_COMM_WORLD, &request_h_recv_up);
 
@@ -277,20 +222,12 @@ int main ( int argc, char *argv[] )
 				buf_up_send[j] = h[id]; 
 				buf_up_send[j+ny_loc] = uh[id];
 				buf_up_send[j+2*ny_loc] = vh[id];
-// 				printf("bufup[%d] %f, hup[%d] %f \n",j,buf_up_send[j],id,h[id]);
-
-				}
-//            printf("nbuf %d \n",n_buf);
+			}
 			MPI_Isend(buf_up_send,n_buf,MPI_DOUBLE,rank_up,
             101,MPI_COMM_WORLD,&request_h_send_up); 
-// 			for(i =0; i<n_buf;i++){
-// 				printf("bufup[%d] %f \n",i,buf_up_send[i]);
-// 				}
         }
 
         if(rank_down>=0){
-
-// 			printf("error3 rankdown =%d \n",rank_down);
 			 //set up receiving from the top
             MPI_Irecv(buf_down_recv, n_buf, MPI_DOUBLE,rank_down,
             101, MPI_COMM_WORLD, &request_h_recv_down);
@@ -303,18 +240,12 @@ int main ( int argc, char *argv[] )
 				buf_down_send[j] = h[id]; 
 				buf_down_send[j+nx_loc] = uh[id]; 
 				buf_down_send[j+2*nx_loc] = vh[id];
-// 			printf("bufdown[%d] %f, hdowwn[%d] %f \n",j,buf_down_send[j],id,h[id]);
-
             }
 
 			 MPI_Isend(buf_down_send,n_buf,MPI_DOUBLE,rank_down,
             101,MPI_COMM_WORLD,&request_h_send_down); 
-// 			for(i =0; i<n_buf;i++){
-// 				printf("bufdown[%d] %f \n",i,buf_down_send[i]);
-// 				}
 		}
-//-----------------------------------------------------------
-        
+//-----------------------------------------------------------       
         //Compute interior fluxes
         for ( i = 1; i < ny_loc+1; i++ )
         for ( j = 1; j < nx_loc+1; j++){
@@ -331,10 +262,8 @@ int main ( int argc, char *argv[] )
 //---------------------------------------------------------------
         /*********WAIT FOR COMMUNICATION TO COMPLETE***********/
         /**********LEFT/RIGHT***********/
-//         printf("WAITS ERROR \n");
         /****WAIT & RECV****/
         if(rank_left>=0){
-// 			printf("rankleft =%d \n",rank_left);
 	        MPI_Wait(&request_h_recv_left,&status);
 			j=0;
 			for(i = 0; i < ny_loc ; i++){
@@ -342,8 +271,6 @@ int main ( int argc, char *argv[] )
                 h[id]=buf_left_recv[i];
                 uh[id]=buf_left_recv[i+ny_loc];
                 vh[id]=buf_left_recv[i+2*ny_loc];
-// 				printf("h[%d] %f,  bufleft[%d] %f \n",id,h[id],i,buf_left_recv[i]);
-			
             }
 
         }
@@ -356,12 +283,10 @@ int main ( int argc, char *argv[] )
                 h[id1]=h[id2];
                 uh[id1]=-uh[id2];
                 vh[id1]=vh[id2];
-// 				printf("h[%d] %f,  h[%d] %f \n",id1,h[id1],id2,h[id2]);
             }
         }
         /****WAIT & RECV****/
         if(rank_right>=0){
-// 			printf("rankrgt =%d \n",rank_right);
 		    MPI_Wait(&request_h_recv_right,&status);
             j=nx_loc+1;
 	   		for(i = 0; i < ny_loc ; i++){
@@ -369,7 +294,6 @@ int main ( int argc, char *argv[] )
 	            h[id]=buf_right_recv[i];
 	            uh[id]=buf_right_recv[i+ny_loc];
 	            vh[id]=buf_right_recv[i+2*ny_loc];
-// 				printf("h[%d] %f,  bufright[%d] %f \n",id,h[id],i,buf_right_recv[i]);
 	        }
         }
         /****BOUNDARY_CONDITION****/
@@ -381,15 +305,12 @@ int main ( int argc, char *argv[] )
                 h[id1]=h[id2];
                 uh[id1]=-uh[id2];
                 vh[id1]=vh[id2];
-// 				printf("h[%d] %f,  h[%d] %f \n",id1,h[id1],id2,h[id2]);
-
             }
         }
 
         /*************TOP/BOTTOM**************/
         /****WAIT & RECV****/
         if(rank_up>=0){
-// 			printf("rankup=%d \n",rank_up);
             MPI_Wait(&request_h_recv_up,&status);
             i=nx_loc+1;
 	   		for( j = 0; j < nx_loc ; j++){
@@ -397,7 +318,6 @@ int main ( int argc, char *argv[] )
 	            h[id]=buf_up_recv[j];
     	        uh[id]=buf_up_recv[j+nx_loc];
         	    vh[id]=buf_up_recv[j+2*nx_loc];
-// 				printf("h[%d] %f,  bufup[%d] %f \n",id,h[id],j,buf_up_recv[j]);
     	    }
         }
         /****BOUNDARY_CONDITION****/
@@ -409,12 +329,10 @@ int main ( int argc, char *argv[] )
                 h[id1]=h[id2];
                 uh[id1]=uh[id2];
                 vh[id1]=-vh[id2];
-// 				printf("h[%d] %f,  h[%d] %f \n",id1,h[id1],id2,h[id2]);
             }
         }
         /****WAIT & RECV****/
         if(rank_down>=0){
-// 			printf(" rankdown =%d \n",rank_down);
             MPI_Wait(&request_h_recv_down,&status);
 			i=0;
    	   		for( j = 0; j < nx_loc ; j++){
@@ -422,8 +340,6 @@ int main ( int argc, char *argv[] )
 	            h[id]=buf_down_recv[j];
     	        uh[id]=buf_down_recv[j+nx_loc];
         	    vh[id]=buf_down_recv[j+2*ny_loc];
-// 				printf("h[%d] %f,  bufdown[%d] %f \n",id,h[id],j,buf_down_recv[j]);
-
             }
         }
         /****BOUNDARY_CONDITION****/
@@ -435,7 +351,6 @@ int main ( int argc, char *argv[] )
                 h[id1]=h[id2];
                 uh[id1]=uh[id2];
                 vh[id1]=-vh[id2];
-// 				printf("h[%d] %f,  h[%d] %f \n",id1,h[id1],id2,h[id2]);
             }
         }
 //---------------------------------------------------------------
@@ -627,14 +542,6 @@ int main ( int argc, char *argv[] )
     free(buf_down_recv);
     free(buf_up_send); 
     free(buf_down_send);
-    
-//     //Terminate.
-//     if(irank==0){
-//         printf ( "\n" );
-//         printf ( "SHALLOW_WATER_2D:\n" );
-//         printf ( "  Normal end of execution.\n" );
-//         printf ( "\n" );
-//     }
     MPI_Finalize();
     return 0;
 }
