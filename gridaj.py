@@ -5,8 +5,8 @@ def gridaj(a,b,nx,ny):
     gridx=np.zeros((nx)**2)
     gridy=np.zeros((ny)**2)
     for i in range(0,nx):
-        x[i] = i*hx -b
-        y[i] = i*hy -b  
+        x[i] = i*hx -a
+        y[i] = i*hy -a  
     for i in range(0,nx):  
         for j in range(0,nx):
             gridx[i*(nx)+j] = x[j]
