@@ -2,15 +2,16 @@
 #include <stdio.h>
 #include <math.h>
 
-int main() 
+int main(int argc, char *argv[]) 
 {
+
 FILE *output;
 double *xi;
 double *gridx,*gridy;
 int i,j;
-int n = 4;
-double a = -1;
-double b = 1;
+int n = atoi( argv[1] );
+double a = atof( argv[2] );
+double b = atof( argv[3] );
 double h = (b - a) /(n-1);
 
 xi = (double *) malloc(n*sizeof(double));
@@ -19,7 +20,7 @@ gridy = (double *) malloc(n*n*sizeof(double));
 
 for (i = 0; i < n; i++) {
     xi[i] = a + i*h;
-    printf("xi[%d] = %f \n",i,xi[i]);
+/*    printf("xi[%d] = %f \n",i,xi[i]);*/
     }
 
 for (i = 0; i < n*n; i++){
