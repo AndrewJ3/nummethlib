@@ -1,0 +1,13 @@
+
+pebble17
+{
+type searchableSphere;
+centre (.17 .17 .17 );
+radius 0.15
+}
+centre (.17 .17 .17 );
+radius 0.15
+}
+centre (.17 .17 .17 );
+radius 0.15
+}

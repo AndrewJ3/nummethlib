@@ -23,7 +23,7 @@ for (i = 0; i < n; i++) {
 /*    printf("xi[%d] = %f \n",i,xi[i]);*/
     }
 
-for (i = 0; i < n*n; i++){
+for (i = 0; i < n; i++){
     for (j = 0; j < n; j++){
         gridx[i*n+j] = xi[j];
         gridy[j*n+i] = xi[j];  
