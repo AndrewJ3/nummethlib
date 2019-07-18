@@ -35,3 +35,4 @@ plt.show()
 t=np.arange(0,40,0.01)
 rs=odeint(func,[1,1,1],np.arange(0,40,0.01))
 
+np.savefig("lorenz.dat",np.c_(f[:,0],f[:,1],f[:,2]))
