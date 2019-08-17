@@ -1,3 +1,4 @@
+import numpy as np 
 def fd2poisson(f,g,a,b,m):
     
     h=(b-a)/(m+1)
