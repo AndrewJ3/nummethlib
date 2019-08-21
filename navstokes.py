@@ -1,0 +1,68 @@
+import numpy as np
+import scipy.sparse as sp
+import matplotlib.pyplot as plt
+import sys
+from mpl_toolkits import mplot3d
+
+def lap(u,idx,idy,h):
+	return (u[idx,idy + 1] + u[idx + 1,idy] - 4*u[idx,idy] +\
+u[idx - 1, idy ] + u[idx , idy -1])/h**2
+
+def upwind(u,vel,idx,idy,h):
+	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/h +\
+               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/h
+
+def upwind(u,vel,idx,idy,h):
+	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(2*h) +\
+               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/(2*h)
+
+               
+def laxfr(u,vel,idx,idy,h):
+	return 0.5*(u[idx+1,idy] - u[idx-1,idy] ) +\
+               0.5*vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx - 1, idy ] )/h +\
+               0.5*vel[1][idx,idy]*( u[idx , idy + 1] - u[idx , idy - 1] )/h
+                             
+n = int(sys.argv[1])
+tfinal = float(sys.argv[2])
+dt = float(sys.argv[3])
+
+b = 1 ; a = -1 
+h = (b - a)/(n+1)
+u = np.zeros((n+2,n+2))
+v = np.zeros((n+2,n+2))
+p = np.zeros((n+2,n+2))
+xi = np.linspace(a,b,n)
+xx,yy = np.meshgrid(xi,xi)
+
+# constants
+nu = 0.1
+rho = 1
+
+# initial conditions
+u[ : , 0 ] = 1
+
+# interior indices 
+idx = np.arange(1,n+1).reshape(n,1)
+idy = idx.T
+
+t = 0
+while (t <= tfinal):
+	tmpu = u[idx,idy] +\
+    dt*(-upwind(u,[u,v,],idx,idy,h)+nu*lap(u,idx,idy,h))
+	tmpv = v[idx,idy] +\
+    dt*(-upwind(v,[u,v],idx,idy,h)+nu*lap(v,idx,idy,h))
+	u[idx,idy] = tmpu
+	v[idx,idy] = tmpv
+	t += dt
+	print("\r time = %g"%t , end = " ")
+	
+print(" ")
+
+#visualization
+fig=plt.figure(figsize=(20,12))
+ax=fig.add_subplot(1,1,1)
+plt1 = ax.contourf(xx,yy,u[idx,idy],100,cmap ='viridis')
+fig.colorbar(plt1)
+plt.savefig('nse.png')
+
+
