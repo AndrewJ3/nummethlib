@@ -1,5 +1,5 @@
 # nummethlib
-Numerical PDE codes.
+Numerical Methods Library.
 
 https://github.com/AndrewJ3/nummethlib/blob/master/sw2d2.gif
 
