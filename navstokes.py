@@ -12,16 +12,41 @@ def upwind(u,vel,idx,idy,h):
 	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/h +\
                vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/h
 
-def upwind(u,vel,idx,idy,h):
-	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(2*h) +\
-               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/(2*h)
+def ppe(p,u,v,dt,idx,idy,h,rho):
 
-               
+	def gradxu(u,h,i,j):
+		return ( u[i+1,j] - u[i-1,j] )/(2*h)
+
+	def gradyu(u,h,i,j):
+		return ( u[i,j+1] - u[i,j-1] )/(2*h)
+	
+	tol = 1e-4
+	for i in range(1,n-1):
+		for j in range(1,n-1):
+			p[i,j] = ( p[i+1,j] + p[i-1,j] + p[i,j-1] + p[i,j+1] ) +\
+            4*(h**2)*rho*( gradxu(u,
+
+
+	res = np.zeros((n-1,n-1))
+	for i in range(1,n-1):
+		for j in range(1,n-1):
+			res[ i , j ] = p[i,j] - (h**2) * ( p[idx + 1 , idy] + p[idx - 1, idy ] +\
+								 p[idx - 1, idy ] + p[ idx - 1, idy ] )
+
+	
+	return p[idx,idy]
+
+def pressgrad(p,idx,idy,h,component):
+	if component == 'x':
+		return ( p[ idx + 1 , idy ] - p[ idx - 1 , idy ] )/(2*h)
+	else:
+		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*h)
+
 def laxfr(u,vel,idx,idy,h):
 	return 0.5*(u[idx+1,idy] - u[idx-1,idy] ) +\
                0.5*vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx - 1, idy ] )/h +\
                0.5*vel[1][idx,idy]*( u[idx , idy + 1] - u[idx , idy - 1] )/h
-                             
+
 n = int(sys.argv[1])
 tfinal = float(sys.argv[2])
 dt = float(sys.argv[3])
@@ -47,10 +72,10 @@ idy = idx.T
 
 t = 0
 while (t <= tfinal):
-	tmpu = u[idx,idy] +\
-    dt*(-upwind(u,[u,v,],idx,idy,h)+nu*lap(u,idx,idy,h))
-	tmpv = v[idx,idy] +\
-    dt*(-upwind(v,[u,v],idx,idy,h)+nu*lap(v,idx,idy,h))
+	tmpu = u[idx,idy] + dt*(-upwind(u,[u,v,],idx,idy,h)+nu*lap(u,idx,idy,h) -\
+			pressgrad(p,idx,idy,h,'x'))
+	tmpv = v[idx,idy] + dt*(-upwind(v,[u,v],idx,idy,h)+nu*lap(v,idx,idy,h) -\
+			pressgrad(p,idx,idy,h,'y'))
 	u[idx,idy] = tmpu
 	v[idx,idy] = tmpv
 	t += dt
