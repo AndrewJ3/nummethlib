@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import sys
 from mpl_toolkits import mplot3d
 
-def lap(u,idx,idy,h):
-	return (u[idx,idy + 1] + u[idx + 1,idy] - 4*u[idx,idy] +\
-u[idx - 1, idy ] + u[idx , idy -1])/h**2
+def lap(u,idx,idy,hx,hy):
+	return (u[idx + 1 ,idy] + u[idx + 1,idy] - 2*u[idx,idy])/hx**2 +\
+	(u[idx , idy + 1 ] + u[idx , idy - 1] -2*u[idx,idy])/hy**2
 
-def upwind(u,vel,idx,idy,h):
-	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/h +\
-               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/h
+def upwind(u,vel,idx,idy,hx,hy):
+	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/hx +\
+               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/hy
 
 def ppe(p,u,v,dt,idx,idy,h,rho):
 
@@ -36,28 +36,31 @@ def ppe(p,u,v,dt,idx,idy,h,rho):
 	
 	return p[idx,idy]
 
-def pressgrad(p,idx,idy,h,component):
+def pressgrad(p,idx,idy,hx,hy,component):
 	if component == 'x':
 		return ( p[ idx + 1 , idy ] - p[ idx - 1 , idy ] )/(2*h)
 	else:
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*h)
 
-def laxfr(u,vel,idx,idy,h):
-	return 0.5*(u[idx+1,idy] - u[idx-1,idy] ) +\
-               0.5*vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx - 1, idy ] )/h +\
-               0.5*vel[1][idx,idy]*( u[idx , idy + 1] - u[idx , idy - 1] )/h
+#def laxfr(u,vel,idx,idy,h):
+#	return 0.5*(u[idx+1,idy] - u[idx-1,idy] ) +\
+#               0.5*vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx - 1, idy ] )/h +\
+#               0.5*vel[1][idx,idy]*( u[idx , idy + 1] - u[idx , idy - 1] )/h
 
 n = int(sys.argv[1])
 tfinal = float(sys.argv[2])
 dt = float(sys.argv[3])
 
-b = 1 ; a = -1 
-h = (b - a)/(n+1)
+x0 = -1 ; xn = 2
+y0 = -1 ; yn = 1
+hy = (yn - y0)/( n + 1 )
+hx = (xn - x0)/( n + 1 )
 u = np.zeros((n+2,n+2))
 v = np.zeros((n+2,n+2))
 p = np.zeros((n+2,n+2))
-xi = np.linspace(a,b,n)
-xx,yy = np.meshgrid(xi,xi)
+yi = np.linspace(y0,yn,n)
+xi = np.linspace(x0,xn,n)
+xx,yy = np.meshgrid(xi,yi)
 
 # constants
 nu = 0.1
