@@ -1,10 +1,9 @@
 import numpy as np
-import scipy.linalg as spl
-import scipy.sparse as sp
-#from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-
+from matplotlib import cm
+import scipy.sparse as sp
+import scipy.sparse.linalg as spl
 def poibicgstab(f,hy,hx,nx,ny):
 
     # Sparse Differentiation Matrices (2D Discrete Laplacian)
@@ -18,15 +17,15 @@ def poibicgstab(f,hy,hx,nx,ny):
 
     I_x=sp.eye(nx)
     I_y=sp.eye(ny)
-    D2y=(hy**-2)*sp.kron(I_x,D2_y)
     D2x=(hx**-2)*sp.kron(D2_x,I_y)
+    D2y=(hy**-2)*sp.kron(I_x,D2_y)
     L=(D2x+D2y)
 
     #RHS
     f=np.reshape(f,nx*ny)
     
     #krylov methods
-    ubicgs,itr=spl.bicgstab(L,f,tol=1e-8)
+    ubicgs,itr=spl.bicgstab(L,f,tol=1e-5)
     print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
@@ -35,9 +34,49 @@ def lap(u,idx,idy,hx,hy):
 	return (u[idx + 1 ,idy] + u[ idx - 1, idy ] - 2*u[idx,idy] )/(hx**2 )+\
 	(u[idx , idy + 1 ] + u[ idx , idy - 1 ] -2*u[idx,idy] )/(hy**2)
 
-def upwind(u,vel,idx,idy,hx,hy):
-	return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/hx +\
-               vel[1][idx,idy]*( u[idx , idy] - u[idx , idy - 1] )/hy
+# def upwindord1(u,vel,idx,idy,hx,hy):
+#     if vel[0].min() > 0 and vel[1].min() > 0:
+#         return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(hx) +\
+#                    vel[1][idx,idy]*( u[idx , idy  ] - u[idx  , idy - 1])/(hy)
+    
+#     elif vel[0].min() > 0 and vel[1].min() < 0:
+#         return vel[0][idx,idy]*( u[idx , idy] - u[  idx - 1, idy ] )/(hx) +\
+#                    vel[1][idx,idy]*( u[ idx , idy + 1 ] - u[ idx , idy ])/(hy)
+    
+#     elif vel[0].min() < 0 and vel[1].min() > 0:
+#         return vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx , idy ] )/(hx) +\
+#                    vel[1][idx,idy]*( u[idx , idy ] - u[idx  , idy - 1 ])/(hy)
+    
+#     else:
+#         return vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx , idy ] )/(hx) +\
+#                    vel[1][idx,idy]*( u[idx + 1 , idy ] - u[idx  , idy ])/(hy)
+
+
+def upwindord1(u,vel,idx,idy,hx,hy):
+    return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(hx) +\
+               vel[1][idx,idy]*( u[idx , idy  ] - u[idx  , idy - 1])/(hy)
+
+def upwindord2(u,vel,idx,idy,hx,hy):
+    return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
+                   vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
+
+# def upwindord2(u,vel,idx,idy,hx,hy):
+    
+#     if vel[0].min() > 0 and vel[1].min() > 0:
+#         return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
+#                    vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
+    
+#     elif vel[0].min() > 0 and vel[1].min() < 0:
+#         return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
+#                    vel[1][idx,idy]*( -3*u[idx , idy] + 4*u[idx , idy + 1 ] + u[idx  , idy + 2 ])/(2*hy)
+    
+#     elif vel[0].min() < 0 and vel[1].min() > 0:
+#         return vel[0][idx,idy]*( -3*u[idx , idy] + 4*u[idx + 1, idy ] - u[idx + 2 , idy ])/(2*hx) +\
+#                    vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
+    
+#     else:
+#         return vel[0][idx,idy]*( -3*u[idx , idy] + 4*u[idx + 1, idy ] - u[idx + 2 , idy ])/(2*hx) +\
+#                    vel[1][idx,idy]*( -3*u[idx , idy] + 4*u[idx , idy + 1 ] - u[idx  , idy + 2 ])/(2*hy)
 
 def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
     nx2 , ny2 = p.shape
@@ -52,9 +91,9 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
     # rhs \nabla^{2} p = \partial_x u**2  + 2*\partial_y u*\partial_x v + \partial_y u**2
     rhs = np.zeros((nx+2,ny+2))
     rhs[idx,idy] = rho*((hx**2 * hy**2 )/(2*(hx**2 + hy**2 ))) *\
-    ((1/dt)*(gradxu(u,idx,idy,hx) + gradyu(v,idx,idy,hy)) -\
-    ( gradxu(u,idx,idy,hx)**2 + 2*(gradyu(u,idx,idy,hy)*gradxu(v,idx,idy,hx)) +\
-    gradyu(v,idx,idy,hy)**2))
+                    ((1/dt)*(gradxu(u,idx,idy,hx) + gradyu(v,idx,idy,hy)) -\
+                    ( gradxu(u,idx,idy,hx)**2 + 2*(gradyu(u,idx,idy,hy)*gradxu(v,idx,idy,hx)) +\
+                    gradyu(v,idx,idy,hy)**2))
 
     # solve pressure poisson equation
     p = poibicgstab(rhs[idx,idy],hy,hx,nx,ny)
@@ -68,9 +107,9 @@ def gradp(p,idx,idy,hx,hy,component):
 	else:
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*hy)
 
-nx = 100
-ny = 50
-tfinal = 35
+nx = 50//2
+ny = 50//2
+tfinal = 10
 dt = 0.001
 
 x0 = -1 ; xn = 2
@@ -85,7 +124,7 @@ yi = np.linspace(y0,yn,ny+2)
 xx,yy = np.meshgrid(xi,yi)
 
 # constants
-nu = 0.01
+nu = 0.1
 rho = 1
 
 # interior indices 
@@ -106,9 +145,9 @@ t = 0
 while (t < tfinal):
 
     # solve momentum and pressure equations
-    tmpu = u[idx,idy] + dt*(-upwind(u,[u,v],idx,idy,hx,hy)+nu*lap(u,idx,idy,hx,hy) -\
+    tmpu = u[idx,idy] + dt*(-upwindord2(u,[u,v],idx,idy,hx,hy)+nu*lap(u,idx,idy,hx,hy) -\
             gradp(p,idx,idy,hx,hy,'x'))
-    tmpv = v[idx,idy] + dt*(-upwind(v,[u,v],idx,idy,hx,hy)+nu*lap(v,idx,idy,hx,hy) -\
+    tmpv = v[idx,idy] + dt*(-upwindord2(v,[u,v],idx,idy,hx,hy)+nu*lap(v,idx,idy,hx,hy) -\
             gradp(p,idx,idy,hx,hy,'y'))
 #     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)[idx,idy]
 
@@ -145,5 +184,4 @@ print(" ")
 # plt1 = ax.contourf(xx,yy,np.sqrt(u**2+v**2),100,cmap ='viridis')
 # fig.colorbar(plt1)
 # # plt.savefig('nse.png')
-
 
