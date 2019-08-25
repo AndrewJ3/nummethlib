@@ -25,7 +25,7 @@ def poibicgstab(f,hy,hx,nx,ny):
     f=np.reshape(f,nx*ny)
     
     #krylov methods
-    ubicgs,itr=spl.bicgstab(L,f,tol=1e-5)
+    ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
     print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
@@ -107,15 +107,15 @@ def gradp(p,idx,idy,hx,hy,component):
 	else:
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*hy)
 
-nx = 50//2
+nx = 100//2
 ny = 50//2
 tfinal = 10
 dt = 0.001
 
-x0 = -1 ; xn = 2
+x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
-hy = (yn - y0)/( nx + 1 )
-hx = (xn - x0)/( ny + 1 )
+hy = (yn - y0)/( ny + 3 )
+hx = (xn - x0)/( nx + 3 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
@@ -134,12 +134,21 @@ idy = np.arange(1,nx+1).reshape(1,nx)
 # initial/ boundary conditions
 u[ : , 0 ] = 1
 u[ -1 , :] = 0 
-u[ 0 , :] = 0 
-u[ : ,-1] = -(-4*u[ : , -2] + u[ : ,-3])/3
+u[ 0 , : ] = 0 
+u[ : , -1 ] = -(-4*u[ : , -2] + u[ : ,-3])/3
+# u[ : , -1 ] = u[ : , -2 ]
+# v[ : , -1 ] = v[ : ,-2 ]
+v[ : , -1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
+v[ -1 , : ] = 0 
+v[ 0 , : ] = 0 
 p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
+# p[ : , 0 ] = p[ : , 1 ]
 p[ : , -1 ] = 0
 p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
 p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
+# p[ 0 , : ] = p[ 1 , : ] 
+# p[-1 , : ] = p[ -2 , : ] 
+
 
 t = 0
 while (t < tfinal):
@@ -152,17 +161,20 @@ while (t < tfinal):
 #     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)[idx,idy]
 
     # update boundary conditions
-    u[ : ,-1 ] = -(-4*u[ : ,-2] + u[ : ,-3])/3
-#     u[ : ,-1 ] = u[ : ,-2]
+    u[ : ,-1 ] = -(-4*u[ : ,-2 ] + u[ : ,-3 ])/3
+#     u[ : , -1 ] = u[ : ,-2 ]
     u[ -1 , : ] = 0 
     u[ 0 , : ] = 0 
+#     v[ : , -1 ] = v[ : ,-2 ]
+    v[ : ,-1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
+    v[ -1 , : ] = 0 
+    v[ 0 , : ] = 0 
     p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
 #     p[ : , 0 ] = p[ : , 1 ]
     p[ : , -1 ] = 0
 #     p[ 0 , : ] = p[ 1 , : ] 
 #     p[-1 , : ] = p[ -2 , : ]
-
-    p[ 0 , : ] = -(-4*p[ 1 , : ] + p[ 2 , : ])/3
+    p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
     p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
