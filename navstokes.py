@@ -1,9 +1,10 @@
 import numpy as np
+import scipy.linalg as spl
+import scipy.sparse as sp
+#from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-from matplotlib import cm
-import scipy.sparse as sp
-import scipy.sparse.linalg as spl
+
 def poibicgstab(f,hy,hx,nx,ny):
 
     # Sparse Differentiation Matrices (2D Discrete Laplacian)
@@ -131,24 +132,25 @@ rho = 1
 idx = np.arange(1,ny+1).reshape(ny,1)
 idy = np.arange(1,nx+1).reshape(1,nx)
 
-# initial/ boundary conditions
+# initial conditions 
 u[ : , 0 ] = 1
-u[ -1 , :] = 0 
+
+# boundary conditions
+u[ -1 , : ] = 0 
 u[ 0 , : ] = 0 
-u[ : , -1 ] = -(-4*u[ : , -2] + u[ : ,-3])/3
-# u[ : , -1 ] = u[ : , -2 ]
-# v[ : , -1 ] = v[ : ,-2 ]
-v[ : , -1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
 v[ -1 , : ] = 0 
 v[ 0 , : ] = 0 
-p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-# p[ : , 0 ] = p[ : , 1 ]
+u[ : , -1 ] = u[ : , -2 ]
+v[ : , -1 ] = v[ : ,-2 ]
+# u[ : , -1 ] = -(-4*u[ : , -2] + u[ : ,-3])/3
+# v[ : , -1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
+# p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
+p[ : , 0 ] = p[ : , 1 ]
+# p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
+# p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
+p[ 0 , : ] = p[ 1 , : ] 
+p[-1 , : ] = p[ -2 , : ] 
 p[ : , -1 ] = 0
-p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
-# p[ 0 , : ] = p[ 1 , : ] 
-# p[-1 , : ] = p[ -2 , : ] 
-
 
 t = 0
 while (t < tfinal):
@@ -161,21 +163,21 @@ while (t < tfinal):
 #     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)[idx,idy]
 
     # update boundary conditions
-    u[ : ,-1 ] = -(-4*u[ : ,-2 ] + u[ : ,-3 ])/3
-#     u[ : , -1 ] = u[ : ,-2 ]
     u[ -1 , : ] = 0 
     u[ 0 , : ] = 0 
-#     v[ : , -1 ] = v[ : ,-2 ]
-    v[ : ,-1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
     v[ -1 , : ] = 0 
     v[ 0 , : ] = 0 
-    p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-#     p[ : , 0 ] = p[ : , 1 ]
+    v[ : , -1 ] = v[ : , -2 ]
+    u[ : , -1 ] = u[ : , -2 ]
+#     u[ : ,-1 ] = -(-4*u[ : ,-2 ] + u[ : ,-3 ])/3
+#     v[ : ,-1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
+#     p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
+    p[ : , 0 ] = p[ : , 1 ]
+    p[ 0 , : ] = p[ 1 , : ] 
+    p[-1 , : ] = p[ -2 , : ]
+#     p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
+#     p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
     p[ : , -1 ] = 0
-#     p[ 0 , : ] = p[ 1 , : ] 
-#     p[-1 , : ] = p[ -2 , : ]
-    p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-    p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     [idx,idy]
