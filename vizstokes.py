@@ -7,5 +7,5 @@ uvpxy=[]
 for i in range(len(npzfile.files)):
 	uvpxy.append(npzfile[npzfile.files[i]])
 u,v,p,x,y=uvpxy
-plt.plot(x[0,:],u[0,:])
+plt.plot(y[:,-1],u[:,-1])
 plt.savefig("flow.png")
