@@ -73,7 +73,7 @@ def poibicgstab(f,hy,hx,nx,ny):
     
     #krylov methods
     ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
-    print("\r iter = %d"%itr , end = " ")
+#    print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
 
@@ -126,7 +126,7 @@ def gradp(p,idx,idy,hx,hy,component):
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*hy)
 
 # --------------------------------------------------------------------------
-
+monitorfile = open("../timemonitor","w")
 nx = int(sys.argv[1])
 ny = int(sys.argv[2])
 tfinal = float(sys.argv[3])
@@ -172,7 +172,7 @@ p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
 p[ : , -1 ] = 0
 
 t = 0
-# RK2
+timestep = 0
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
@@ -203,9 +203,13 @@ while (t < tfinal):
     p[idx,idy] = tmpp
 
     t += dt
-    print("\r time = %g"%t , end = " ")
-
-print(" ")
+    #print("\r time = %g"%t , end = " ")
+	# Advance and Display/Monitor Time Step
+    t = round(t,3)
+    timestep += 1
+    monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
+    monitorfile.write("------------------------\n")
+#print(" ")
 
 #np.savetxt('test.out',(u,v,xx,yy))
 fig = plt.figure(figsize=(14,8))
