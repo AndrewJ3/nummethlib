@@ -127,10 +127,10 @@ def gradp(p,idx,idy,hx,hy,component):
 
 # --------------------------------------------------------------------------
 
-nx = 100
-ny = 50
+nx = 100//2
+ny = 50//2
 tfinal = 10
-dt = 0.001
+dt = 0.01
 
 x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
@@ -175,7 +175,8 @@ t = 0
 # RK2
 while (t < tfinal):
     
-    tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
+    tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
+    tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
     u[ -1 , : ] = 0 
@@ -194,7 +195,6 @@ while (t < tfinal):
     p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
     p[ : , -1 ] = 0
     
-    tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     [idx,idy]
 
     # update momentum and pressure for next timestep
