@@ -211,7 +211,10 @@ while (t < tfinal):
     monitorfile.write("------------------------\n")
 #print(" ")
 
-#np.savetxt('test.out',(u,v,xx,yy))
+#zip data
+np.savez('test.npz',u= u,v=v,p=p,x=xx,y=yy)
+
+#visualization
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
 plt1 = ax.contourf(xx,yy,np.sqrt(u**2 + v**2),100,cmap='jet')
