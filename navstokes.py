@@ -5,6 +5,52 @@ import scipy.sparse as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
+# Timestepping Methods
+def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+    su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))
+    su2 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))) + dt*su1
+    
+    sv1 = advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+            gradp(p,idx,idy,hx,hy,'y'))
+    sv2 = (advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+            gradp(p,idx,idy,hx,hy,'y'))) + dt*sv1
+    
+    tmpu = u[idx,idy] + (su1 + su2)/2
+    tmpv = v[idx,idy] + (sv1 + sv2)/2
+    return tmpu,tmpv
+
+def rk4(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+    su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))
+
+    su2 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))) + (su1/2)
+
+    su3 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))) + (su2/2)
+
+    su4 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'x'))) + (su3)
+
+    sv1 = advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'y'))
+
+    sv2 = (advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'y'))) + (sv1/2)
+
+    sv3 = (advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'y'))) + (sv2/2)
+
+    sv4 = (advscheme(v,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(v,idx,idy,hx,hy) -\
+        gradp(p,idx,idy,hx,hy,'y'))) + (sv3)
+
+    tmpu = u[idx,idy]+((su1/6)+(su2/3)+(su3/3)+(su4/6))
+    tmpv = v[idx,idy]+((sv1/6)+(sv2/3)+(sv3/3)+(sv4/6))
+    return tmpu,tmpv
+
+# advection and diffusion operations
 def poibicgstab(f,hy,hx,nx,ny):
 
     # Sparse Differentiation Matrices (2D Discrete Laplacian)
@@ -35,49 +81,20 @@ def lap(u,idx,idy,hx,hy):
 	return (u[idx + 1 ,idy] + u[ idx - 1, idy ] - 2*u[idx,idy] )/(hx**2 )+\
 	(u[idx , idy + 1 ] + u[ idx , idy - 1 ] -2*u[idx,idy] )/(hy**2)
 
-# def upwindord1(u,vel,idx,idy,hx,hy):
-#     if vel[0].min() > 0 and vel[1].min() > 0:
-#         return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(hx) +\
-#                    vel[1][idx,idy]*( u[idx , idy  ] - u[idx  , idy - 1])/(hy)
-    
-#     elif vel[0].min() > 0 and vel[1].min() < 0:
-#         return vel[0][idx,idy]*( u[idx , idy] - u[  idx - 1, idy ] )/(hx) +\
-#                    vel[1][idx,idy]*( u[ idx , idy + 1 ] - u[ idx , idy ])/(hy)
-    
-#     elif vel[0].min() < 0 and vel[1].min() > 0:
-#         return vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx , idy ] )/(hx) +\
-#                    vel[1][idx,idy]*( u[idx , idy ] - u[idx  , idy - 1 ])/(hy)
-    
-#     else:
-#         return vel[0][idx,idy]*( u[idx + 1 , idy] - u[idx , idy ] )/(hx) +\
-#                    vel[1][idx,idy]*( u[idx + 1 , idy ] - u[idx  , idy ])/(hy)
+def upwindord1(u,vel,idx,idy,hx,hy,dt):
+    return dt*vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(hx) +\
+               dt*vel[1][idx,idy]*( u[idx , idy  ] - u[idx  , idy - 1])/(hy)
 
+def upwindord2(u,vel,idx,idy,hx,hy,dt):
+    return dt*vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
+                   dt*vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
 
-def upwindord1(u,vel,idx,idy,hx,hy):
-    return vel[0][idx,idy]*( u[idx , idy] - u[idx - 1, idy ] )/(hx) +\
-               vel[1][idx,idy]*( u[idx , idy  ] - u[idx  , idy - 1])/(hy)
-
-def upwindord2(u,vel,idx,idy,hx,hy):
-    return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
-                   vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
-
-# def upwindord2(u,vel,idx,idy,hx,hy):
-    
-#     if vel[0].min() > 0 and vel[1].min() > 0:
-#         return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
-#                    vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
-    
-#     elif vel[0].min() > 0 and vel[1].min() < 0:
-#         return vel[0][idx,idy]*( 3*u[idx , idy] - 4*u[idx - 1, idy ] + u[idx - 2 , idy ])/(2*hx) +\
-#                    vel[1][idx,idy]*( -3*u[idx , idy] + 4*u[idx , idy + 1 ] + u[idx  , idy + 2 ])/(2*hy)
-    
-#     elif vel[0].min() < 0 and vel[1].min() > 0:
-#         return vel[0][idx,idy]*( -3*u[idx , idy] + 4*u[idx + 1, idy ] - u[idx + 2 , idy ])/(2*hx) +\
-#                    vel[1][idx,idy]*( 3*u[idx , idy] - 4*u[idx , idy - 1 ] + u[idx  , idy - 2 ])/(2*hy)
-    
-#     else:
-#         return vel[0][idx,idy]*( -3*u[idx , idy] + 4*u[idx + 1, idy ] - u[idx + 2 , idy ])/(2*hx) +\
-#                    vel[1][idx,idy]*( -3*u[idx , idy] + 4*u[idx , idy + 1 ] - u[idx  , idy + 2 ])/(2*hy)
+def laxw(u,vel,idx,idy,hx,hy,dt):
+    fin = 0.5*(u[idx + 1, idy] + u[idx,idy]) - (vel[0][idx,idy])*(dt/(2*hx))*(u[idx + 1, idy] - u[idx , idy])
+    fout = 0.5*(u[idx , idy] + u[idx - 1,idy]) - (vel[0][idx,idy])*(dt/(2*hx))*(u[idx, idy] - u[idx - 1, idy])
+    gin = 0.5*(u[idx + 1, idy] + u[idx,idy]) - (vel[1][idx,idy])*(dt/(2*hy))*(u[idx, idy + 1] - u[idx , idy])
+    gout = 0.5*(u[idx , idy] + u[idx,idy - 1]) - (vel[1][idx,idy])*(dt/(2*hy))*(u[idx , idy] - u[idx, idy - 1])
+    return (vel[0][idx,idy]*(dt/hx))*( fin - fout ) + (vel[1][idx,idy]*(dt/hy))*( gin - gout )
 
 def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
     nx2 , ny2 = p.shape
@@ -101,22 +118,24 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
 #     p,res = sorppe(u,v,p,rho,dt,omega,nx,ny,hx,hy)
     return p
 
-
+#pressure gradient
 def gradp(p,idx,idy,hx,hy,component):
 	if component == 'x':
 		return ( p[ idx + 1 , idy ] - p[ idx - 1 , idy ] )/(2*hx)
 	else:
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*hy)
 
-nx = 100//2
-ny = 50//2
+# --------------------------------------------------------------------------
+
+nx = 100
+ny = 50
 tfinal = 10
 dt = 0.001
 
 x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
-hy = (yn - y0)/( ny + 3 )
-hx = (xn - x0)/( nx + 3 )
+hy = (yn - y0)/( ny + 1 )
+hx = (xn - x0)/( nx + 1 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
@@ -140,43 +159,39 @@ u[ -1 , : ] = 0
 u[ 0 , : ] = 0 
 v[ -1 , : ] = 0 
 v[ 0 , : ] = 0 
-u[ : , -1 ] = u[ : , -2 ]
-v[ : , -1 ] = v[ : ,-2 ]
-# u[ : , -1 ] = -(-4*u[ : , -2] + u[ : ,-3])/3
-# v[ : , -1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
-# p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-p[ : , 0 ] = p[ : , 1 ]
-# p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-# p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
-p[ 0 , : ] = p[ 1 , : ] 
-p[-1 , : ] = p[ -2 , : ] 
+# u[ : , -1 ] = u[ : , -2 ]
+# v[ : , -1 ] = v[ : , -2 ]
+u[ : ,-1 ] = (4*u[ : ,-2 ] - u[ : ,-3 ])/3
+v[ : ,-1 ] = (4*v[ : ,-2 ] - v[ : ,-3 ])/3
+p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
+p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
+p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
+# p[ : , 0 ] = -p[ : , 1 ]
+# p[ 0 , : ] = -p[ 1 , : ] 
+# p[-1 , : ] =  p[ -2 , : ] 
 p[ : , -1 ] = 0
 
 t = 0
+# RK2
 while (t < tfinal):
-
-    # solve momentum and pressure equations
-    tmpu = u[idx,idy] + dt*(-upwindord2(u,[u,v],idx,idy,hx,hy)+nu*lap(u,idx,idy,hx,hy) -\
-            gradp(p,idx,idy,hx,hy,'x'))
-    tmpv = v[idx,idy] + dt*(-upwindord2(v,[u,v],idx,idy,hx,hy)+nu*lap(v,idx,idy,hx,hy) -\
-            gradp(p,idx,idy,hx,hy,'y'))
-#     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)[idx,idy]
-
+    
+    tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
+    
     # update boundary conditions
     u[ -1 , : ] = 0 
     u[ 0 , : ] = 0 
     v[ -1 , : ] = 0 
     v[ 0 , : ] = 0 
-    v[ : , -1 ] = v[ : , -2 ]
-    u[ : , -1 ] = u[ : , -2 ]
-#     u[ : ,-1 ] = -(-4*u[ : ,-2 ] + u[ : ,-3 ])/3
-#     v[ : ,-1 ] = -(-4*v[ : ,-2 ] + v[ : ,-3 ])/3
-#     p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-    p[ : , 0 ] = p[ : , 1 ]
-    p[ 0 , : ] = p[ 1 , : ] 
-    p[-1 , : ] = p[ -2 , : ]
-#     p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-#     p[-1 , : ] = -(-4*p[ -2 , : ] + p[-3 , : ])/3
+#     v[ : , -1 ] = v[ : , -2 ]
+#     u[ : , -1 ] = u[ : , -2 ]
+    u[ : ,-1 ] = (4*u[ : ,-2 ] - u[ : ,-3 ])/3
+    v[ : ,-1 ] = (4*v[ : ,-2 ] - v[ : ,-3 ])/3
+#     p[ : , 0 ] = -p[ : , 1 ]
+#     p[ 0 , : ] = -p[ 1 , : ] 
+#     p[-1 , : ] =  p[ -2 , : ]
+    p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
+    p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
+    p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
     p[ : , -1 ] = 0
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
@@ -191,11 +206,3 @@ while (t < tfinal):
     print("\r time = %g"%t , end = " ")
 
 print(" ")
-#print(u)
-#visualization
-# fig=plt.figure(figsize=(20,12))
-# ax=fig.add_subplot(1,1,1)
-# plt1 = ax.contourf(xx,yy,np.sqrt(u**2+v**2),100,cmap ='viridis')
-# fig.colorbar(plt1)
-# # plt.savefig('nse.png')
-
