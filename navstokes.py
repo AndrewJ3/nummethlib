@@ -1,10 +1,10 @@
 import numpy as np
-import scipy.linalg as spl
+import scipy.sparse.linalg as spl
 import scipy.sparse as sp
 #from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-
+import sys
 # Timestepping Methods
 def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -127,15 +127,15 @@ def gradp(p,idx,idy,hx,hy,component):
 
 # --------------------------------------------------------------------------
 
-nx = 100//2
-ny = 50//2
-tfinal = 10
-dt = 0.01
+nx = int(sys.argv[1])
+ny = int(sys.argv[2])
+tfinal = float(sys.argv[3])
+dt = float(sys.argv[4])
 
 x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
-hy = (yn - y0)/( ny + 1 )
-hx = (xn - x0)/( nx + 1 )
+hy = (yn - y0)/( ny + 2 )
+hx = (xn - x0)/( nx + 2 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
@@ -176,7 +176,7 @@ t = 0
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
-    tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
+    tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,laxw)
     
     # update boundary conditions
     u[ -1 , : ] = 0 
@@ -206,3 +206,16 @@ while (t < tfinal):
     print("\r time = %g"%t , end = " ")
 
 print(" ")
+
+#np.savetxt('test.out',(u,v,xx,yy))
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+plt1 = ax.contourf(xx,yy,np.sqrt(u**2 + v**2),100,cmap='jet')
+fig.colorbar(plt1)
+plt.savefig('umag.png')
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+plt2 = ax.contourf(xx,yy,p,100,cmap='jet')
+fig.colorbar(plt2)
+plt.savefig('press.png')
