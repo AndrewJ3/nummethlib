@@ -147,55 +147,58 @@ xx,yy = np.meshgrid(xi,yi)
 nu = 0.1
 rho = 1
 
+
 # interior indices 
+uidx = np.arange(2,ny).reshape(ny-2,1)
+uidy = np.arange(1,nx+1).reshape(1,nx)
 idx = np.arange(1,ny+1).reshape(ny,1)
 idy = np.arange(1,nx+1).reshape(1,nx)
 
 # initial conditions 
-u[ : , 0 ] = 1
+u[ idx , :1 ] = 1
 
-# boundary conditions
-u[ -1 , : ] = 0 
-u[ 0 , : ] = 0 
-v[ -1 , : ] = 0 
-v[ 0 , : ] = 0 
-# u[ : , -1 ] = u[ : , -2 ]
-# v[ : , -1 ] = v[ : , -2 ]
-u[ : ,-1 ] = (4*u[ : ,-2 ] - u[ : ,-3 ])/3
-v[ : ,-1 ] = (4*v[ : ,-2 ] - v[ : ,-3 ])/3
-p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
-# p[ : , 0 ] = -p[ : , 1 ]
-# p[ 0 , : ] = -p[ 1 , : ] 
-# p[-1 , : ] =  p[ -2 , : ] 
-p[ : , -1 ] = 0
+# BC
+u[ -2 ] = 0 
+u[ 1  ] = 0 
+v[ -2 ] = 0 
+v[ 1  ] = 0 
+u[ idx , -2 ] = u[ idx , -1  ]
+v[ idx , -2 ] = v[ idx , -1  ]
+p[ idx , 1  ] = -p[ idx ,  0  ] 
+p[ 1 , idy  ] = -p[ 0  , idy  ] 
+p[-2 , idy  ] =  p[ -1 , idy  ]
+# u[ idx ,-1 ] = (4*u[ idx ,-2 ] - u[ idx ,-3 ])/3
+# v[ idx ,-1 ] = (4*v[ idx ,-2 ] - v[ idx ,-3 ])/3
+# p[ idx , 0 ] = -(-4*p[ idx , 1 ] + p[ idx , 2 ])/3
+# p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
+# p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
+p[ idx , -1 ] =  0
 
 t = 0
-timestep = 0
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
+#     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
     tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,laxw)
+#     tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
-    u[ -1 , : ] = 0 
-    u[ 0 , : ] = 0 
-    v[ -1 , : ] = 0 
-    v[ 0 , : ] = 0 
-#     v[ : , -1 ] = v[ : , -2 ]
-#     u[ : , -1 ] = u[ : , -2 ]
-    u[ : ,-1 ] = (4*u[ : ,-2 ] - u[ : ,-3 ])/3
-    v[ : ,-1 ] = (4*v[ : ,-2 ] - v[ : ,-3 ])/3
-#     p[ : , 0 ] = -p[ : , 1 ]
-#     p[ 0 , : ] = -p[ 1 , : ] 
-#     p[-1 , : ] =  p[ -2 , : ]
-    p[ : , 0 ] = -(-4*p[ : , 1 ] + p[ : , 2 ])/3
-    p[ 0 , : ] = -(-4*p[ 1 , : ] +  p[ 2 , : ])/3
-    p[-1 , : ] = (4*p[ -2 , : ] - p[-3 , : ])/3
-    p[ : , -1 ] = 0
-    
-#     [idx,idy]
+    u[ idx , -2 ] = u[ idx , -1  ]
+    v[ idx , -2 ] = v[ idx , -1  ]
+    p[ idx , 1  ] = -p[ idx , 0  ] 
+    p[ 1 , idy  ] = -p[ 0 , idy  ] 
+    p[-1 , idy  ] = p[ 0 , idy  ]
+#     u[ idx ,-1 ] = (4*u[ idx ,-2 ] - u[ idx ,-3 ])/3
+#     v[ idx ,-1 ] = (4*v[ idx ,-2 ] - v[ idx ,-3 ])/3
+#     p[ idx , 0 ] = -(-4*p[ idx , 1 ] + p[ idx , 2 ])/3
+#     p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
+#     p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
+
+    tmpp[ : , -2 ] = 0
+    tmpu[ -1 ] = 0 
+    tmpu[ 0 ] = 0 
+    tmpv[ -1 ] = 0 
+    tmpv[ 0 ] = 0 
 
     # update momentum and pressure for next timestep
     u[idx,idy] = tmpu
@@ -212,17 +215,18 @@ while (t < tfinal):
 #print(" ")
 
 #zip data
-np.savez('test.npz',u= u,v=v,p=p,x=xx,y=yy)
+np.savez('test.npz',u=u,v=v,p=p,x=xx,y=yy)
 
 #visualization
+xx = xx[idx,idy]; yy = yy[idx,idy]
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
-plt1 = ax.contourf(xx,yy,np.sqrt(u**2 + v**2),100,cmap='jet')
+plt1 = ax.contourf(xx,yy,np.sqrt(u[idx,idy]**2 + v[idx,idy]**2),100,cmap='jet')
 fig.colorbar(plt1)
 plt.savefig('umag.png')
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
-plt2 = ax.contourf(xx,yy,p,100,cmap='jet')
+plt2 = ax.contourf(xx,yy,p[idx,idy],100,cmap='jet')
 fig.colorbar(plt2)
 plt.savefig('press.png')
