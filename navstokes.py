@@ -51,7 +51,7 @@ def rk4(u,v,dt,hx,hy,nu,idx,idy,advscheme):
     return tmpu,tmpv
 
 # advection and diffusion operations
-def poibicgstab(f,hy,hx,nx,ny):
+def poifd(f,hy,hx,nx,ny):
 
     # Sparse Differentiation Matrices (2D Discrete Laplacian)
     l1x=[1]*(nx-1)
@@ -114,7 +114,7 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
                     gradyu(v,idx,idy,hy)**2))
 
     # solve pressure poisson equation
-    p = poibicgstab(rhs[idx,idy],hy,hx,nx,ny)
+    p = poifd(rhs[idx,idy],hy,hx,nx,ny)
 #     p,res = sorppe(u,v,p,rho,dt,omega,nx,ny,hx,hy)
     return p
 
