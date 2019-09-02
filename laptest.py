@@ -5,7 +5,7 @@ from mpl_toolkits import mplot3d
 
 def lap(u,idx,idy,hx,hy):
     return (u[idx + 1 ,idy] + u[ idx - 1, idy ] - 2*u[idx,idy] )/(hx**2 )+\
-    (u[idx , idy + 1 ] + u[ idx , idy - 1 ] -2*u[idx,idy] )/(hy**2)
+	    (u[idx , idy + 1 ] + u[ idx , idy - 1 ] -2*u[idx,idy] )/(hy**2)
 def func(xx,yy):
 	return xx**3 + yy**3
 def exact(xx,yy):
@@ -17,6 +17,7 @@ def exact(xx,yy):
 
 x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
+
 '''
 hy = (yn - y0)/( ny + 2 )
 hx = (xn - x0)/( nx + 2 )
@@ -31,14 +32,13 @@ idx = np.arange(1,ny+1).reshape(ny,1)
 idy = np.arange(1,nx+1).reshape(1,nx)
 '''
 
-
-nxs = [2*(2**i) for i in range(3,8)]
+nxs = [(2**i) for i in range(3,8)]
 nys = [2**i for i in range(3,8)]
 errs = []; hxs =[];hys=[]
 for nx,ny in zip(nxs,nys):
-	hy = (yn - y0)/( ny + 3 )
-	hx = (xn - x0)/( nx + 3 )
-	u = np.zeros((ny+2,nx+2))
+	hy = (yn - y0)/( ny - 1 )
+	hx = (xn - x0)/( nx - 1 )
+	u = np.zeros((nx+2,ny+2))
 	xi = np.linspace(x0,xn,nx+2)
 	yi = np.linspace(y0,yn,ny+2)
 	xx,yy = np.meshgrid(xi,yi)
@@ -50,8 +50,8 @@ for nx,ny in zip(nxs,nys):
 	ue = exact(xx,yy)[idx,idy]
 	errs.append(relerr(lapu,ue))
 	
-for i in range(1,len(errs)):
-	p = np.log(errs[i-1]/errs[i])/np.log((hxs[i-1])/(hxs[i]))
+for i in range(len(errs)-1):
+	p = np.log(errs[i]/errs[i+1])/np.log((hxs[i]/hxs[i+1]))
 	print(p)
 
 #visualization

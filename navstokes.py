@@ -1,12 +1,13 @@
 import numpy as np
 import scipy.sparse.linalg as spl
 import scipy.sparse as sp
+from libhelper import relerr
 #from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import sys
 # Timestepping Methods
-def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+def rk2(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
         gradp(p,idx,idy,hx,hy,'x'))
     su2 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -21,7 +22,7 @@ def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
     tmpv = v[idx,idy] + (sv1 + sv2)/2
     return tmpu,tmpv
 
-def rk4(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+def rk4(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
         gradp(p,idx,idy,hx,hy,'x'))
 
@@ -132,10 +133,10 @@ ny = int(sys.argv[2])
 tfinal = float(sys.argv[3])
 dt = float(sys.argv[4])
 
-x0 = -1 ; xn = 3
+x0 = -1 ; xn = 5
 y0 = -1 ; yn = 1
-hy = (yn - y0)/( ny + 2 )
-hx = (xn - x0)/( nx + 2 )
+hy = (yn - y0)/( ny - 1 )
+hx = (xn - x0)/( nx - 1 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
@@ -173,13 +174,13 @@ p[-2 , idy  ] =  p[ -1 , idy  ]
 # p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 # p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 p[ idx , -1 ] =  0
-
+timestep =0
 t = 0
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
-    tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,laxw)
+    tmpu,tmpv = rk4(u,v,p,dt,hx,hy,nu,idx,idy,laxw)
 #     tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
@@ -194,23 +195,28 @@ while (t < tfinal):
 #     p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 #     p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 
-    tmpp[ : , -2 ] = 0
+    tmpp[ : , -1 ] = 0
     tmpu[ -1 ] = 0 
     tmpu[ 0 ] = 0 
     tmpv[ -1 ] = 0 
     tmpv[ 0 ] = 0 
-
+    udiff = relerr(tmpu,u[idx,idy]+2.3e-16)
+    pdiff = relerr(tmpp,p[idx,idy]+2.3e-16)
     # update momentum and pressure for next timestep
     u[idx,idy] = tmpu
     v[idx,idy] = tmpv
     p[idx,idy] = tmpp
-
+	
     t += dt
     #print("\r time = %g"%t , end = " ")
 	# Advance and Display/Monitor Time Step
     t = round(t,3)
+    pdiff = round(pdiff,4)
+    udiff = round(udiff,4)
     timestep += 1
     monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
+    monitorfile.write("momentum tolerance" + str(udiff)+"\n")
+    monitorfile.write("pressure tolerance"+ str(pdiff)+"\n")
     monitorfile.write("------------------------\n")
 #print(" ")
 
