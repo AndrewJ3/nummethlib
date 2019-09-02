@@ -1,12 +1,13 @@
 import numpy as np
-import scipy.linalg as spl
+import scipy.sparse.linalg as spl
 import scipy.sparse as sp
+from libhelper import relerr
 #from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-
+import sys
 # Timestepping Methods
-def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+def rk2(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
         gradp(p,idx,idy,hx,hy,'x'))
     su2 = (advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -21,7 +22,7 @@ def rk2(u,v,dt,hx,hy,nu,idx,idy,advscheme):
     tmpv = v[idx,idy] + (sv1 + sv2)/2
     return tmpu,tmpv
 
-def rk4(u,v,dt,hx,hy,nu,idx,idy,advscheme):
+def rk4(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
         gradp(p,idx,idy,hx,hy,'x'))
 
@@ -51,7 +52,7 @@ def rk4(u,v,dt,hx,hy,nu,idx,idy,advscheme):
     return tmpu,tmpv
 
 # advection and diffusion operations
-def poibicgstab(f,hy,hx,nx,ny):
+def poifd(f,hy,hx,nx,ny):
 
     # Sparse Differentiation Matrices (2D Discrete Laplacian)
     l1x=[1]*(nx-1)
@@ -73,7 +74,7 @@ def poibicgstab(f,hy,hx,nx,ny):
     
     #krylov methods
     ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
-    print("\r iter = %d"%itr , end = " ")
+#    print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
 
@@ -114,7 +115,7 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
                     gradyu(v,idx,idy,hy)**2))
 
     # solve pressure poisson equation
-    p = poibicgstab(rhs[idx,idy],hy,hx,nx,ny)
+    p = poifd(rhs[idx,idy],hy,hx,nx,ny)
 #     p,res = sorppe(u,v,p,rho,dt,omega,nx,ny,hx,hy)
     return p
 
@@ -126,16 +127,16 @@ def gradp(p,idx,idy,hx,hy,component):
 		return ( p[ idx , idy + 1 ] - p[ idx , idy - 1 ] )/(2*hy)
 
 # --------------------------------------------------------------------------
+monitorfile = open("../timemonitor","w")
+nx = int(sys.argv[1])
+ny = int(sys.argv[2])
+tfinal = float(sys.argv[3])
+dt = float(sys.argv[4])
 
-nx = 100//2
-ny = 50//2
-tfinal = 10
-dt = 0.01
-
-x0 = -1 ; xn = 3
+x0 = -1 ; xn = 5
 y0 = -1 ; yn = 1
-hy = (yn - y0)/( ny + 1 )
-hx = (xn - x0)/( nx + 1 )
+hy = (yn - y0)/( ny - 1 )
+hx = (xn - x0)/( nx - 1 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
@@ -173,13 +174,13 @@ p[-2 , idy  ] =  p[ -1 , idy  ]
 # p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 # p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 p[ idx , -1 ] =  0
-
+timestep =0
 t = 0
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
-    tmpu,tmpv = rk4(u,v,dt,hx,hy,nu,idx,idy,laxw)
+    tmpu,tmpv = rk4(u,v,p,dt,hx,hy,nu,idx,idy,laxw)
 #     tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
@@ -194,18 +195,44 @@ while (t < tfinal):
 #     p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 #     p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 
-    tmpp[ : , -2 ] = 0
+    tmpp[ : , -1 ] = 0
     tmpu[ -1 ] = 0 
     tmpu[ 0 ] = 0 
     tmpv[ -1 ] = 0 
     tmpv[ 0 ] = 0 
-
+    udiff = relerr(tmpu,u[idx,idy]+2.3e-16)
+    pdiff = relerr(tmpp,p[idx,idy]+2.3e-16)
     # update momentum and pressure for next timestep
     u[idx,idy] = tmpu
     v[idx,idy] = tmpv
     p[idx,idy] = tmpp
-
+	
     t += dt
-    print("\r time = %g"%t , end = " ")
+    #print("\r time = %g"%t , end = " ")
+	# Advance and Display/Monitor Time Step
+    t = round(t,3)
+    pdiff = round(pdiff,4)
+    udiff = round(udiff,4)
+    timestep += 1
+    monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
+    monitorfile.write("momentum tolerance: " + str(udiff)+"\n")
+    monitorfile.write("pressure tolerance: "+ str(pdiff)+"\n")
+    monitorfile.write("------------------------\n")
+#print(" ")
 
-print(" ")
+#zip data
+np.savez('test.npz',u=u,v=v,p=p,x=xx,y=yy)
+
+#visualization
+xx = xx[idx,idy]; yy = yy[idx,idy]
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+plt1 = ax.contourf(xx,yy,np.sqrt(u[idx,idy]**2 + v[idx,idy]**2),100,cmap='jet')
+fig.colorbar(plt1)
+plt.savefig('umag.png')
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+plt2 = ax.contourf(xx,yy,p[idx,idy],100,cmap='jet')
+fig.colorbar(plt2)
+plt.savefig('press.png')
