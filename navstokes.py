@@ -176,7 +176,9 @@ p[-2 , idy  ] =  p[ -1 , idy  ]
 p[ idx , -1 ] =  0
 timestep =0
 t = 0
-while (t < tfinal):
+udiff = 1
+pdiff = 1
+while (pdiff > 1e-4 and udiff > 1e-4):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
@@ -184,22 +186,18 @@ while (t < tfinal):
 #     tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
-    u[ idx , -2 ] = u[ idx , -1  ]
-    v[ idx , -2 ] = v[ idx , -1  ]
-    p[ idx , 1  ] = -p[ idx , 0  ] 
-    p[ 1 , idy  ] = -p[ 0 , idy  ] 
-    p[-1 , idy  ] = p[ 0 , idy  ]
-#     u[ idx ,-1 ] = (4*u[ idx ,-2 ] - u[ idx ,-3 ])/3
-#     v[ idx ,-1 ] = (4*v[ idx ,-2 ] - v[ idx ,-3 ])/3
-#     p[ idx , 0 ] = -(-4*p[ idx , 1 ] + p[ idx , 2 ])/3
-#     p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
-#     p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
-
+    tmpu[ : , -1 ] = tmpu[ : , -2  ]
+    tmpv[ : , -1 ] = tmpv[ : , -2  ]
+    tmpp[ : , 0  ] = tmpp[ : , 1  ] 
+    tmpp[ 0 , :  ] = tmpp[ 1 , :  ] 
+    tmpp[ -1 , :  ] = tmpp[ -2 , :  ]   
     tmpp[ : , -1 ] = 0
     tmpu[ -1 ] = 0 
     tmpu[ 0 ] = 0 
     tmpv[ -1 ] = 0 
     tmpv[ 0 ] = 0 
+    
+    # Momentum and Pressure Tolerance
     udiff = relerr(tmpu,u[idx,idy]+2.3e-16)
     pdiff = relerr(tmpp,p[idx,idy]+2.3e-16)
     # update momentum and pressure for next timestep
