@@ -2,10 +2,10 @@ import numpy as np
 import scipy.sparse.linalg as spl
 import scipy.sparse as sp
 from libhelper import relerr
-#from scipy.fftpack import dct,idct,dst,idst
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import sys
+
 # Timestepping Methods
 def rk2(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -73,7 +73,7 @@ def poifd(f,hy,hx,nx,ny):
     f=np.reshape(f,nx*ny)
     
     #krylov methods
-    ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
+    ubicgs,itr=spl.bicgstab(L,f,tol=1e-8)
 #    print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
@@ -133,15 +133,15 @@ ny = int(sys.argv[2])
 tfinal = float(sys.argv[3])
 dt = float(sys.argv[4])
 
-x0 = -1 ; xn = 5
+x0 = -1 ; xn = 3
 y0 = -1 ; yn = 1
 hy = (yn - y0)/( ny - 1 )
 hx = (xn - x0)/( nx - 1 )
 u = np.zeros((ny+2,nx+2))
 v = np.zeros((ny+2,nx+2))
 p = np.zeros((ny+2,nx+2))
-xi = np.linspace(x0,xn,nx+2)
-yi = np.linspace(y0,yn,ny+2)
+xi = np.linspace(x0,xn,nx)
+yi = np.linspace(y0,yn,ny)
 xx,yy = np.meshgrid(xi,yi)
 
 # constants
@@ -174,8 +174,11 @@ p[-2 , idy  ] =  p[ -1 , idy  ]
 # p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 # p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 p[ idx , -1 ] =  0
-timestep =0
+timestep = 0
 t = 0
+udiff = 1
+pdiff = 1
+tol = float(sys.argv[5])
 while (t < tfinal):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
@@ -184,22 +187,18 @@ while (t < tfinal):
 #     tmpu,tmpv = rk2(u,v,dt,hx,hy,nu,idx,idy,upwindord1)
     
     # update boundary conditions
-    u[ idx , -2 ] = u[ idx , -1  ]
-    v[ idx , -2 ] = v[ idx , -1  ]
-    p[ idx , 1  ] = -p[ idx , 0  ] 
-    p[ 1 , idy  ] = -p[ 0 , idy  ] 
-    p[-1 , idy  ] = p[ 0 , idy  ]
-#     u[ idx ,-1 ] = (4*u[ idx ,-2 ] - u[ idx ,-3 ])/3
-#     v[ idx ,-1 ] = (4*v[ idx ,-2 ] - v[ idx ,-3 ])/3
-#     p[ idx , 0 ] = -(-4*p[ idx , 1 ] + p[ idx , 2 ])/3
-#     p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
-#     p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
-
+    tmpu[ : , -1 ] = tmpu[ : , -2  ]
+    tmpv[ : , -1 ] = tmpv[ : , -2  ]
+    tmpp[ : , 0  ] = tmpp[ : , 1  ] 
+    tmpp[ 0 , :  ] = tmpp[ 1 , :  ] 
+    tmpp[ -1 , :  ] = tmpp[ -2 , :  ]   
     tmpp[ : , -1 ] = 0
     tmpu[ -1 ] = 0 
     tmpu[ 0 ] = 0 
     tmpv[ -1 ] = 0 
     tmpv[ 0 ] = 0 
+    
+    # Momentum and Pressure Tolerance
     udiff = relerr(tmpu,u[idx,idy]+2.3e-16)
     pdiff = relerr(tmpp,p[idx,idy]+2.3e-16)
     # update momentum and pressure for next timestep
@@ -211,23 +210,26 @@ while (t < tfinal):
     #print("\r time = %g"%t , end = " ")
 	# Advance and Display/Monitor Time Step
     t = round(t,3)
-    pdiff = round(pdiff,4)
-    udiff = round(udiff,4)
     timestep += 1
     monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
-    monitorfile.write("momentum tolerance" + str(udiff)+"\n")
-    monitorfile.write("pressure tolerance"+ str(pdiff)+"\n")
-    monitorfile.write("------------------------\n")
+    monitorfile.write("momentum tolerance: " + str(udiff)+"\n")
+    monitorfile.write("pressure tolerance: "+ str(pdiff)+"\n")
+    monitorfile.write("------------------------------------\n")
+    if pdiff < tol and udiff < tol:
+          break;
 #print(" ")
 
 #zip data
 np.savez('test.npz',u=u,v=v,p=p,x=xx,y=yy)
+um = np.sqrt(u**2 + v**2)
+print(um[idx,-2].max())
+ums = um[idx,-2]/np.max(um[idx,-2],0)
+ums = ums.flatten()
 
 #visualization
-xx = xx[idx,idy]; yy = yy[idx,idy]
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
-plt1 = ax.contourf(xx,yy,np.sqrt(u[idx,idy]**2 + v[idx,idy]**2),100,cmap='jet')
+plt1 = ax.contourf(xx,yy,u[idx,idy],100,cmap='jet')
 fig.colorbar(plt1)
 plt.savefig('umag.png')
 
@@ -236,3 +238,11 @@ ax = fig.add_subplot(1,1,1)
 plt2 = ax.contourf(xx,yy,p[idx,idy],100,cmap='jet')
 fig.colorbar(plt2)
 plt.savefig('press.png')
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+ax.plot(yi,1-yi**2,'b--',label = 'exact')
+ax.plot(yi,ums,'ro',label = 'FD')
+plt.legend()
+plt.savefig('error.png')
+
