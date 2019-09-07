@@ -116,7 +116,6 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
 
     # solve pressure poisson equation
     p = poifd(rhs[idx,idy],hy,hx,nx,ny)
-#     p,res = sorppe(u,v,p,rho,dt,omega,nx,ny,hx,hy)
     return p
 
 #pressure gradient
