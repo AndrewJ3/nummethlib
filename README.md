@@ -1,8 +1,11 @@
 # nummethlib
 
-Numerical Methods Library. 
+Numerical Methods Library.
 
-Includes a combination Linear Algebra Routines, Mesh Generation and ODE/PDE Solvers.
+Some Features:
+Linear Algebra Routines.
+ODE and PDE Solvers.
+Simple Mesh Generation Techniques.
 
 ![alt text](https://github.com/AndrewJ3/nummethlib/blob/master/sw2d2.gif)
 
