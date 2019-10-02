@@ -178,7 +178,8 @@ timestep =0
 t = 0
 udiff = 1
 pdiff = 1
-while (pdiff > 1e-4 and udiff > 1e-4):
+tol = 1e-5
+while (pdiff > tol and udiff > tol):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
@@ -209,8 +210,8 @@ while (pdiff > 1e-4 and udiff > 1e-4):
     #print("\r time = %g"%t , end = " ")
 	# Advance and Display/Monitor Time Step
     t = round(t,3)
-    pdiff = round(pdiff,4)
-    udiff = round(udiff,4)
+#    pdiff = round(pdiff,4)
+#    udiff = round(udiff,4)
     timestep += 1
     monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
     monitorfile.write("momentum tolerance: " + str(udiff)+"\n")
