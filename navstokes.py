@@ -2,10 +2,17 @@ import numpy as np
 import scipy.sparse.linalg as spl
 import scipy.sparse as sp
 from libhelper import relerr
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import sys
 
+=======
+#from scipy.fftpack import dct,idct,dst,idst
+import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+import sys
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
 # Timestepping Methods
 def rk2(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -73,7 +80,11 @@ def poifd(f,hy,hx,nx,ny):
     f=np.reshape(f,nx*ny)
     
     #krylov methods
+<<<<<<< HEAD
     ubicgs,itr=spl.bicgstab(L,f,tol=1e-8)
+=======
+    ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
 #    print("\r iter = %d"%itr , end = " ")
     
     return ubicgs.reshape(nx,ny)
@@ -116,6 +127,10 @@ def ppe(p,u,v,dt,idx,idy,hx,hy,rho):
 
     # solve pressure poisson equation
     p = poifd(rhs[idx,idy],hy,hx,nx,ny)
+<<<<<<< HEAD
+=======
+#     p,res = sorppe(u,v,p,rho,dt,omega,nx,ny,hx,hy)
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
     return p
 
 #pressure gradient
@@ -132,7 +147,11 @@ ny = int(sys.argv[2])
 tfinal = float(sys.argv[3])
 dt = float(sys.argv[4])
 
+<<<<<<< HEAD
 x0 = -1 ; xn = 3
+=======
+x0 = -1 ; xn = 5
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
 y0 = -1 ; yn = 1
 hy = (yn - y0)/( ny - 1 )
 hx = (xn - x0)/( nx - 1 )
@@ -173,12 +192,20 @@ p[-2 , idy  ] =  p[ -1 , idy  ]
 # p[ 0 , idy ] = -(-4*p[ 1 , idy ] +  p[ 2 , idy ])/3
 # p[-1 , idy ] = (4*p[ -2 , idy ] - p[-3 , idy ])/3
 p[ idx , -1 ] =  0
+<<<<<<< HEAD
 timestep = 0
 t = 0
 udiff = 1
 pdiff = 1
 tol = float(sys.argv[5])
 while (t < tfinal):
+=======
+timestep =0
+t = 0
+udiff = 1
+pdiff = 1
+while (pdiff > 1e-4 and udiff > 1e-4):
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
 #     tmpu,tmpv = forwardeuler(u,v,dt,hx,hy,nu,idx,idy,laxw)
@@ -209,17 +236,27 @@ while (t < tfinal):
     #print("\r time = %g"%t , end = " ")
 	# Advance and Display/Monitor Time Step
     t = round(t,3)
+<<<<<<< HEAD
+=======
+    pdiff = round(pdiff,4)
+    udiff = round(udiff,4)
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
     timestep += 1
     monitorfile.write(" Time: " + str(t) + " Number of Timesteps: "+ str(timestep)+"\n")
     monitorfile.write("momentum tolerance: " + str(udiff)+"\n")
     monitorfile.write("pressure tolerance: "+ str(pdiff)+"\n")
+<<<<<<< HEAD
     monitorfile.write("------------------------------------\n")
     if pdiff < tol and udiff < tol:
           break;
+=======
+    monitorfile.write("------------------------\n")
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
 #print(" ")
 
 #zip data
 np.savez('test.npz',u=u,v=v,p=p,x=xx,y=yy)
+<<<<<<< HEAD
 um = np.sqrt(u**2 + v**2)
 print(um[idx,-2].max())
 ums = um[idx,-2]/np.max(um[idx,-2],0)
@@ -229,6 +266,14 @@ ums = ums.flatten()
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
 plt1 = ax.contourf(xx,yy,u[idx,idy],100,cmap='jet')
+=======
+
+#visualization
+xx = xx[idx,idy]; yy = yy[idx,idy]
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(1,1,1)
+plt1 = ax.contourf(xx,yy,np.sqrt(u[idx,idy]**2 + v[idx,idy]**2),100,cmap='jet')
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
 fig.colorbar(plt1)
 plt.savefig('umag.png')
 
@@ -237,6 +282,7 @@ ax = fig.add_subplot(1,1,1)
 plt2 = ax.contourf(xx,yy,p[idx,idy],100,cmap='jet')
 fig.colorbar(plt2)
 plt.savefig('press.png')
+<<<<<<< HEAD
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
@@ -245,3 +291,5 @@ ax.plot(yi,ums,'ro',label = 'FD')
 plt.legend()
 plt.savefig('error.png')
 
+=======
+>>>>>>> 43f18a1178fc4c94206979f5514a5e5045a95373
