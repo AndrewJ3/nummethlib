@@ -4,12 +4,8 @@ import scipy.sparse as sp
 from libhelper import relerr
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-import sys
+from input_params import *
 
-#from scipy.fftpack import dct,idct,dst,idst
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
-import sys
 # Timestepping Methods
 def rk2(u,v,p,dt,hx,hy,nu,idx,idy,advscheme):
     su1 = advscheme(u,[u,v],idx,idy,hx,hy,dt) + dt*(nu*lap(u,idx,idy,hx,hy) -\
@@ -79,8 +75,7 @@ def poifd(f,hy,hx,nx,ny):
     #krylov methods
     ubicgs,itr=spl.bicgstab(L,f,tol=1e-8)
     ubicgs,itr=spl.bicgstab(L,f,tol=1e-7)
-#    print("\r iter = %d"%itr , end = " ")
-    
+#    print("\r iter = %d"%itr , end = " "    
     return ubicgs.reshape(nx,ny)
 
 def lap(u,idx,idy,hx,hy):
@@ -133,10 +128,6 @@ def gradp(p,idx,idy,hx,hy,component):
 
 # --------------------------------------------------------------------------
 monitorfile = open("../timemonitor","w")
-nx = int(sys.argv[1])
-ny = int(sys.argv[2])
-tfinal = float(sys.argv[3])
-dt = float(sys.argv[4])
 
 x0 = -1 ; xn = 3
 x0 = -1 ; xn = 5
@@ -184,12 +175,14 @@ timestep = 0
 t = 0
 udiff = 1
 pdiff = 1
-tol = float(sys.argv[5])
+'''
 while (t < tfinal):
 timestep =0
 t = 0
 udiff = 1
 pdiff = 1
+'''
+udiff = 1; pdiff = udiff;
 while (pdiff > 1e-4 and udiff > 1e-4):
     
     tmpp = ppe(p,u,v,dt,idx,idy,hx,hy,rho)
@@ -245,8 +238,8 @@ fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
 plt1 = ax.contourf(xx,yy,u[idx,idy],100,cmap='jet')
 
-#visualization
-xx = xx[idx,idy]; yy = yy[idx,idy]
+#other visualizations
+#xx = xx[idx,idy]; yy = yy[idx,idy]
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(1,1,1)
 plt1 = ax.contourf(xx,yy,np.sqrt(u[idx,idy]**2 + v[idx,idy]**2),100,cmap='jet')
